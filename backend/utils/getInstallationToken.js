@@ -15,4 +15,4 @@ async function getInstallationToken(jwtToken, installationId) {
     return response.data.token;
 }
 
-module.exports = getInstallationToken;
+module.exports = { getInstallationToken };
