@@ -90,7 +90,8 @@ Please explain:
 
             await Info.create({
                 installationId,
-                repo,
+                repositoryName: repo,
+                repositoryOwner: owner,
                 prNumber,
                 checkRunId,
                 isRevert,
@@ -132,7 +133,7 @@ Please explain:
 
             const record = await Info.findOne({
                 installationId,
-                repo,
+                repositoryName: repo,
                 prNumber
             });
 
@@ -220,7 +221,7 @@ Please explain:
             }
 
             let informationToUpdate = await Info.findOneAndUpdate(
-                { installationId, repo, prNumber },
+                { installationId, repositoryName: repo, prNumber },
                 {
                     problem: !record.isRevert
                         ? commentText.split("1.")[1]?.split("2.")[0]?.trim()
