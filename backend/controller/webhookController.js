@@ -32,7 +32,10 @@ router.post("/webhook", async (req, res) => {
         }
 
         // PR OPENED EVENT
-        if (event === "pull_request" && action === "opened") {
+        if (
+            event === "pull_request" &&
+            (action === "opened" || action === "synchronize")
+        ) {
             const installationId = req.body.installation?.id;
             const prNumber = req.body.pull_request?.number;
             const owner = req.body.repository?.owner?.login;
@@ -217,7 +220,7 @@ Please explain:
             }
 
             let informationToUpdate = await Info.findOneAndUpdate(
-                { installationId, repositoryName: repo, prNumber },
+                { installationId, repo, prNumber },
                 {
                     problem: !record.isRevert
                         ? commentText.split("1.")[1]?.split("2.")[0]?.trim()
@@ -244,25 +247,44 @@ Please explain:
                         : null
                 }
             );
-            informationToUpdate.save();
 
 
             // AI Summary
 
             const pastInsights = await snapshot.find({
-                installationId, repositoryName: repo, repositoryOwner: owner
-            }).sort({ createdAt: -1 })
-                .limit(5);
+                installationId,
+                repositoryName: repo,
+                repositoryOwner: owner
+            }).sort({ createdAt: -1 }).limit(5);
+
+            let formattedPast = pastInsights.map((p, index) => {
+                return `
+Decision ${index + 1}:
+Problem: ${p.problem || ""}
+Shortcut: ${p.shortcut || ""}
+Impact: ${p.impact || ""}
+Revert Reason: ${p.revertReason || ""}
+Earlier Problem: ${p.earlierProblem || ""}
+New Plan: ${p.newPlan || ""}
+`;
+            }).join("\n");
 
             //summary of current intent    
             const summary = await summarizeIntent(commentText);
 
             //summary of the pattern and insights by comparing with past decisions
-            const insights = await summarizeIntent(`PastDesicions:problem=${pastInsights.problem}+shortcut=${pastInsights.shortcut}+impact=${pastInsights.impact}+revertReason=${pastInsights.revertReason}+earlierProblem=${pastInsights.earlierProblem}+newPlan=${pastInsights.newPlan} 
-                +CurrentDecisions=${commentText}+Compare and summarize the PastDecisons and CurrentDecisions:
-                       - Is this repeating something?
-                       - Is it conflicting with past decisions?
-                       - Any pattern?`);
+            const insights = await summarizeIntent(`
+Past Decisions:
+${formattedPast}
+
+Current Decision:
+${commentText}
+
+Compare:
+- Is this repeating something?
+- Is it conflicting?
+- Any pattern?
+`);
 
             await postComment(
                 token,
