@@ -8,7 +8,7 @@ const { createCheckRun, updateCheckRun } = require('../utils/CheckRun');
 const { summarizeIntent } = require('../services/aiService');
 const snapshot = require('../models/snapshots');
 
-router.post("/", async (req, res) => {
+router.post("/webhook", async (req, res) => {
 
     try {
 

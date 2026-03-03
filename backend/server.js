@@ -8,7 +8,7 @@ const port=process.env.PORT || 3000;
 app.use(express.json());
 
 
-app.post("/webhook", webControllers);
+app.use("/", webControllers);
 
 app.listen(port, async () => {
     await connectDB();
