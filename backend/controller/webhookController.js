@@ -29,7 +29,7 @@ router.post("/webhook", async (req, res) => {
 
             // console.log(`Installation stored: ${installationId}`);
             return res.sendStatus(200);
-            
+
         }
 
         // PR OPENED EVENT
@@ -258,15 +258,15 @@ Please explain:
 
 
             // AI Summary
+            try {
+                const pastInsights = await snapshot.find({
+                    installationId,
+                    repositoryName: repo,
+                    repositoryOwner: owner
+                }).sort({ createdAt: -1 }).limit(5);
 
-            const pastInsights = await snapshot.find({
-                installationId,
-                repositoryName: repo,
-                repositoryOwner: owner
-            }).sort({ createdAt: -1 }).limit(5);
-
-            let formattedPast = pastInsights.map((p, index) => {
-                return `
+                let formattedPast = pastInsights.map((p, index) => {
+                    return `
 Decision ${index + 1}:
 Problem: ${p.problem || ""}
 Shortcut: ${p.shortcut || ""}
@@ -275,13 +275,13 @@ Revert Reason: ${p.revertReason || ""}
 Earlier Problem: ${p.earlierProblem || ""}
 New Plan: ${p.newPlan || ""}
 `;
-            }).join("\n");
+                }).join("\n");
 
-            //summary of current intent    
-            const summary = await summarizeIntent(commentText);
+                //summary of current intent    
+                const summary = await summarizeIntent(commentText);
 
-            //summary of the pattern and insights by comparing with past decisions
-            const insights = await summarizeIntent(`
+                //summary of the pattern and insights by comparing with past decisions
+                const insights = await summarizeIntent(`
 Past Decisions:
 ${formattedPast}
 
@@ -294,24 +294,43 @@ Compare:
 - Any pattern?
 `);
 
-            await postComment(
-                token,
-                owner,
-                repo,
-                prNumber,
-                `🤖 DecisionGrid Summary:\n\n${summary}`
-            );
+                await postComment(
+                    token,
+                    owner,
+                    repo,
+                    prNumber,
+                    `🤖 DecisionGrid Summary:\n\n${summary}`
+                );
 
-            await postComment(token, owner, repo, prNumber, `🤖 DecisionGrid Summary:\n\n${insights}`)
+                await postComment(token, owner, repo, prNumber, `🤖 DecisionGrid Insights:\n\n${insights}`);
 
-            await updateCheckRun(
-                token,
-                owner,
-                repo,
-                record.checkRunId,
-                "success",
-                "Intent verified and summarized successfully."
-            );
+                await updateCheckRun(
+                    token,
+                    owner,
+                    repo,
+                    record.checkRunId,
+                    "success",
+                    "Intent verified and summarized successfully."
+                );
+
+            } catch (aiError) {
+                console.error("AI Summary failed:", aiError.message);
+                await updateCheckRun(
+                    token,
+                    owner,
+                    repo,
+                    record.checkRunId,
+                    "failure",
+                    "Failed to generate summary. Please try again."
+                );
+                await postComment(
+                    token,
+                    owner,
+                    repo,
+                    prNumber,
+                    "❌ Failed to generate AI summary. Please try /intent again."
+                );
+            }
 
             return res.sendStatus(200);
         }
