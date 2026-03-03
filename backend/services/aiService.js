@@ -66,7 +66,9 @@ ${text}
         return response.text;
     } catch (error) {
         console.error("AI Summary failed:", error.message);
+        console.log("Using Gemini key:", process.env.GEMINI_API_KEY?.slice(0, 10));
         return "AI summary unavailable.";
+
     }
 }
 
