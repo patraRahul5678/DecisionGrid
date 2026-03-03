@@ -17,18 +17,19 @@ router.post("/webhook", async (req, res) => {
 
         // INSTALLATION EVENT
         if (event === "installation") {
-            const installationId = req.body.installation?.id;
+            // const installationId = req.body.installation?.id;
 
-            if (!installationId) {
-                return res.status(400).send("Missing installation ID");
-            }
+            // if (!installationId) {
+            //     return res.status(400).send("Missing installation ID");
+            // }
 
-            await Info.create({
-                installationId
-            });
+            // await Info.create({
+            //     installationId
+            // });
 
-            console.log(`Installation stored: ${installationId}`);
+            // console.log(`Installation stored: ${installationId}`);
             return res.sendStatus(200);
+            
         }
 
         // PR OPENED EVENT
@@ -68,7 +69,7 @@ router.post("/webhook", async (req, res) => {
                 "Intent required. Please provide complete intent using /intent command."
             );
 
-            const intentMessage = `🚀 DevHub Active!
+            const intentMessage = `🚀 DecisionGridOps Active!
 
 Before merging, please provide intent using:
 
@@ -77,7 +78,7 @@ Before merging, please provide intent using:
 2. Did you take any shortcut?
 3. What happens after this change, and what will you improve next?`;
 
-            const reversedIntent = `🚀 DevHub Intent Required
+            const reversedIntent = `🚀 DecisionGridOps Intent Required
 
 This PR looks like a reversal.
 
@@ -88,14 +89,18 @@ Please explain:
 2. What problem did the earlier change cause?
 3. What is the new plan going forward?`;
 
-            await Info.create({
-                installationId,
-                repositoryName: repo,
-                repositoryOwner: owner,
-                prNumber,
-                checkRunId,
-                isRevert,
-            });
+            await Info.findOneAndUpdate(
+                { installationId, repositoryName: repo, prNumber },
+                {
+                    installationId,
+                    repositoryName: repo,
+                    repositoryOwner: owner,
+                    prNumber,
+                    checkRunId,
+                    isRevert,
+                },
+                { upsert: true, new: true }
+            );
 
 
             const message = isRevert ? reversedIntent : intentMessage;
@@ -120,7 +125,9 @@ Please explain:
                 return res.status(400).send("Missing required comment data");
             }
 
-            if (!commentText.startsWith("/intent")) {
+            const trimmedText = commentText.trim();
+
+            if (!trimmedText.toLowerCase().startsWith("/intent")) {
                 return res.sendStatus(200);
             }
 
@@ -150,11 +157,11 @@ Please explain:
 
             // validation
             let isValid = false;
-            const lowerText = commentText.toLowerCase();
+            const lowerText = trimmedText.toLowerCase();
 
-            const has1 = lowerText.includes("1.");
-            const has2 = lowerText.includes("2.");
-            const has3 = lowerText.includes("3.");
+            const has1 = /(^|\n)\s*1\./.test(trimmedText);
+            const has2 = /(^|\n)\s*2\./.test(trimmedText);
+            const has3 = /(^|\n)\s*3\./.test(trimmedText);
             const hasNumbers = has1 && has2 && has3;
 
             if (record.isRevert === true) {
@@ -246,7 +253,7 @@ Please explain:
                     newPlan: record.isRevert
                         ? commentText.split("3.")[1]?.trim()
                         : null
-                }
+                }, { new: true }
             );
 
 
@@ -321,7 +328,7 @@ Compare:
 
             const information = await Info.findOne({
                 installationId,
-                repo,
+                repositoryName: repo,
                 prNumber
             });
 
