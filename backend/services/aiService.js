@@ -1,41 +1,3 @@
-// const OpenAI = require("openai");
-// const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-// async function summarizeIntent(text) {
-
-//     const response = await openai.chat.completions.create({
-//         model: "gpt-4o-mini",
-//         messages: [
-//             {
-//                 role: "system",
-//                 content: `
-// You are an engineering review assistant.
-
-// Summarize the developer's intent in clear bullet points.
-
-// Focus on:
-// - Problem and urgency
-// - Any shortcut or technical debt
-// - Impact and future improvement plan
-
-// Keep it short and professional.
-// `
-//             },
-//             {
-//                 role: "user",
-//                 content: text
-//             }
-//         ]
-//     });
-
-//     return response.choices[0].message.content;
-// }
-
-// module.exports = {
-//     summarizeIntent
-// }
-
-
 const { GoogleGenAI } = require("@google/genai");
 
 const ai = new GoogleGenAI({
@@ -47,20 +9,32 @@ async function summarizeIntent(text) {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: `
-You are an engineering review assistant.
+You are a senior engineering reviewer.
 
-Summarize the developer's intent in clear bullet points.
+Analyze the developer's intent and provide:
 
-Focus on:
+1. Decision Summary
 - Problem and urgency
-- Any shortcut or technical debt
-- Impact and future improvement plan
+- Technical debt or shortcut
+- Impact and future plan
 
-Keep it short and professional.
+2. Risk Assessment
+Classify the change as:
+LOW / MEDIUM / HIGH risk.
 
-Developer Input:
-${text}
-      `
+HIGH risk if:
+- rollback/revert of production change
+- major logic change
+- database schema change
+- security related change
+- unclear intent
+
+3. Recommendation
+If HIGH risk, warn reviewers to carefully review before merging.
+
+Developer Intent:
+${commentText}
+`
         });
 
         return response.text;

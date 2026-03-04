@@ -2,48 +2,39 @@ const mongoose = require("mongoose");
 
 const snapshotSchema = new mongoose.Schema({
     problem: {
-        type: String,
-        required: true,
+        type: String
     },
     shortcut: {
-        type: String,
-        required: true,
+        type: String
     },
     impact: {
-        type: String,
-        required: true,
+        type: String
     },
     revertReason: {
-        type: String,
-        required: true,
+        type: String
     },
     earlierProblem: {
-        type: String,
+        type: String
     },
     newPlan: {
-        type: String,
-    },
-    summary: {
-        type: String,
-        required: true,
+        type: String
     },
     prNumber: {
         type: Number,
-        required: true,
+        required: true
     },
     installationId: {
         type: Number,
-        required: true,
+        required: true
     },
     repositoryName: {
         type: String,
-        required: true,
+        required: true
     },
     repositoryOwner: {
         type: String,
-        required: true,
-    },
-
+        required: true
+    }
 });
 
 module.exports = mongoose.model("Snapshot", snapshotSchema);

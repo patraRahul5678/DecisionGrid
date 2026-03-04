@@ -277,9 +277,6 @@ New Plan: ${p.newPlan || ""}
 `;
                 }).join("\n");
 
-                //summary of current intent    
-                const summary = await summarizeIntent(commentText);
-
                 //summary of the pattern and insights by comparing with past decisions
                 const insights = await summarizeIntent(`
 Past Decisions:
@@ -294,15 +291,8 @@ Compare:
 - Any pattern?
 `);
 
-                await postComment(
-                    token,
-                    owner,
-                    repo,
-                    prNumber,
-                    `🤖 DecisionGrid Summary:\n\n${summary}`
-                );
 
-                await postComment(token, owner, repo, prNumber, `🤖 DecisionGrid Insights:\n\n${insights}`);
+                await postComment(token, owner, repo, prNumber, `🤖 DecisionGrid Summary and Insights:\n\n${insights}`);
 
                 await updateCheckRun(
                     token,
@@ -354,17 +344,17 @@ Compare:
 
             if (information) {
                 await snapshot.create({
-                    problem: information.problem,
-                    shortcut: information.shortcut,
-                    impact: information.impact,
-                    revertReason: information.revertReason,
-                    earlierProblem: information.earlierProblem,
-                    newPlan: information.newPlan,
+                    problem: information.problem || "",
+                    shortcut: information.shortcut || "",
+                    impact: information.impact || "",
+                    revertReason: information.revertReason || "",
+                    earlierProblem: information.earlierProblem || "",
+                    newPlan: information.newPlan || "",
                     prNumber,
                     installationId,
                     repositoryName: repo,
                     repositoryOwner: owner
-                })
+                });
             }
 
             await Info.updateOne(
