@@ -126,8 +126,11 @@ Please explain:
             }
 
             const trimmedText = commentText.trim();
+            const lowerText = trimmedText.toLowerCase();
 
-            if (!trimmedText.toLowerCase().startsWith("/intent")) {
+            if (!lowerText.startsWith("/intent") &&
+                !lowerText.includes("/approve-risk") &&
+                !lowerText.includes("/reject-risk")) {
                 return res.sendStatus(200);
             }
 
@@ -155,9 +158,47 @@ Please explain:
                 return res.sendStatus(200);
             }
 
+            // Handle risk approval/rejection commands
+            if (lowerText.startsWith("/approve-risk")) {
+                await updateCheckRun(
+                    token,
+                    owner,
+                    repo,
+                    record.checkRunId,
+                    "success",
+                    "Risk acknowledged by developer."
+                );
+                await postComment(
+                    token,
+                    owner,
+                    repo,
+                    prNumber,
+                    "✅ Risk accepted. Check passed."
+                );
+                return res.sendStatus(200);
+            }
+
+            if (lowerText.startsWith("/reject-risk")) {
+                await updateCheckRun(
+                    token,
+                    owner,
+                    repo,
+                    record.checkRunId,
+                    "failure",
+                    "PR rejected due to high risk."
+                );
+                await postComment(
+                    token,
+                    owner,
+                    repo,
+                    prNumber,
+                    "❌ PR blocked due to risk."
+                );
+                return res.sendStatus(200);
+            }
+
             // validation
             let isValid = false;
-            const lowerText = trimmedText.toLowerCase();
 
             const has1 = /(^|\n)\s*1\./.test(trimmedText);
             const has2 = /(^|\n)\s*2\./.test(trimmedText);
@@ -227,7 +268,7 @@ Please explain:
                 return res.sendStatus(200);
             }
 
-            let informationToUpdate = await Info.findOneAndUpdate(
+            await Info.findOneAndUpdate(
                 { installationId, repositoryName: repo, prNumber },
                 {
                     problem: !record.isRevert
@@ -293,15 +334,53 @@ Compare:
 
 
                 await postComment(token, owner, repo, prNumber, `🤖 DecisionGrid Summary and Insights:\n\n${insights}`);
+            
+                const insightsText = insights.toLowerCase();
+                const riskyKeywords = ["delete", "drop", "migration", "auth", "security"];
+                const isRisky =
+                    insightsText.includes("high") ||
+                    insightsText.includes("risk") ||
+                    riskyKeywords.some(keyword => insightsText.includes(keyword));
 
-                await updateCheckRun(
-                    token,
-                    owner,
-                    repo,
-                    record.checkRunId,
-                    "success",
-                    "Intent verified and summarized successfully."
-                );
+                if (isRisky) {
+                    await updateCheckRun(
+                        token,
+                        owner,
+                        repo,
+                        record.checkRunId,
+                        "failure",
+                        "High risk change detected. Awaiting developer confirmation."
+                    );
+
+                    await postComment(
+                        token,
+                        owner,
+                        repo,
+                        prNumber,
+                        `⚠️ **DecisionGridOps Risk Warning**
+
+This pull request appears **HIGH RISK**.
+
+Think carefully before merging.
+
+Reply with:
+
+/approve-risk → Accept risk and allow merge  
+/reject-risk → Block this PR`
+                    );
+
+
+                } else {
+                    await updateCheckRun(
+                        token,
+                        owner,
+                        repo,
+                        record.checkRunId,
+                        "success",
+                        "Intent verified and summarized successfully."
+                    );
+                }
+
 
             } catch (aiError) {
                 console.error("AI Summary failed:", aiError.message);

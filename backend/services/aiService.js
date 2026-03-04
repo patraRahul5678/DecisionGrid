@@ -7,35 +7,31 @@ const ai = new GoogleGenAI({
 async function summarizeIntent(text) {
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: `
+    model: "gemini-2.5-flash",
+    contents: `
 You are a senior engineering reviewer.
 
-Analyze the developer's intent and provide:
+Analyze the developer intent and respond with:
 
-1. Decision Summary
-- Problem and urgency
-- Technical debt or shortcut
-- Impact and future plan
+Summary:
+- Problem
+- Shortcut / technical debt
+- Impact
 
-2. Risk Assessment
-Classify the change as:
-LOW / MEDIUM / HIGH risk.
+Risk Level:
+LOW / MEDIUM / HIGH
 
-HIGH risk if:
-- rollback/revert of production change
+Mark HIGH risk if:
+- database change
+- authentication change
+- rollback
+- delete operations
 - major logic change
-- database schema change
-- security related change
-- unclear intent
-
-3. Recommendation
-If HIGH risk, warn reviewers to carefully review before merging.
 
 Developer Intent:
-${commentText}
+${text}
 `
-        });
+  });
 
         return response.text;
     } catch (error) {
