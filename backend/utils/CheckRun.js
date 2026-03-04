@@ -4,7 +4,7 @@ async function createCheckRun(token, owner, repo, conclusion, headSha,message) {
     const response = await axios.post(
         `https://api.github.com/repos/${owner}/${repo}/check-runs`,
         {
-            name: "DevHub Intent Check",
+            name: "DecisionGridOps Intent Check",
             head_sha: headSha,
             status: "completed",
             conclusion: conclusion,
