@@ -4,6 +4,7 @@ const app = express();
 const webControllers = require('./controller/webhookController');
 const connectDB = require('./config/database');
 const port=process.env.PORT || 3000;
+require("./utils/scheduler");
 
 app.use(express.json());
 

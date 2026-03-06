@@ -43,6 +43,28 @@ const infoSchema = new mongoose.Schema(
         },
         newPlan:{
             type: String,
+        },
+        SuggestedTeam:[
+            {
+                type: String,
+            }
+        ],
+        SuggestedDevelopers:[
+            {
+                type: String,
+            }
+        ],
+        firstNotifiedAt:{
+            type: Date,
+            default: null
+        },
+        secondNotifiedAt:{
+            type: Date,
+            default: null
+        },
+        ownerNotified:{
+            type: Boolean,
+            default: false
         }
     },
     { timestamps: true }

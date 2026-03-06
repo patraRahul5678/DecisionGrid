@@ -7,6 +7,15 @@ const { getInstallationToken } = require('../utils/getInstallationToken');
 const { createCheckRun, updateCheckRun } = require('../utils/CheckRun');
 const { summarizeIntent } = require('../services/aiService');
 const snapshot = require('../models/snapshots');
+const { isOrganization } = require('../utils/organizationRepo');
+const { getChangedFiles } = require('../utils/changedFiles');
+const { getNumberOfCommits, getCommitsMessages } = require('../utils/commits');
+const { allowed } = require('../utils/permisssions');
+const { getTeams } = require('../utils/getTeamNames');
+const info = require('../models/info');
+const Ownership = require('../models/ownership');
+const { ownershipInsights } = require('../services/aiService');
+const { extractTeamsFromInsights, extractDevsFromInsights } = require('../utils/extract');
 
 router.post("/webhook", async (req, res) => {
 
@@ -17,17 +26,6 @@ router.post("/webhook", async (req, res) => {
 
         // INSTALLATION EVENT
         if (event === "installation") {
-            // const installationId = req.body.installation?.id;
-
-            // if (!installationId) {
-            //     return res.status(400).send("Missing installation ID");
-            // }
-
-            // await Info.create({
-            //     installationId
-            // });
-
-            // console.log(`Installation stored: ${installationId}`);
             return res.sendStatus(200);
 
         }
@@ -71,23 +69,23 @@ router.post("/webhook", async (req, res) => {
 
             const intentMessage = `🚀 DecisionGridOps Active!
 
-Before merging, please provide intent using:
+                    Before merging, please provide intent using:
 
-/intent
-1. What is the problem and why fix it now?
-2. Did you take any shortcut?
-3. What happens after this change, and what will you improve next?`;
+                    /intent
+                    1. What is the problem and why fix it now?
+                    2. Did you take any shortcut?
+                    3. What happens after this change, and what will you improve next?`;
 
             const reversedIntent = `🚀 DecisionGridOps Intent Required
 
-This PR looks like a reversal.
+                    This PR looks like a reversal.
 
-Please explain:
+                    Please explain:
 
-/intent
-1. Why are we reversing this previous change?
-2. What problem did the earlier change cause?
-3. What is the new plan going forward?`;
+                    /intent
+                    1. Why are we reversing this previous change?
+                    2. What problem did the earlier change cause?
+                    3. What is the new plan going forward?`;
 
             await Info.findOneAndUpdate(
                 { installationId, repositoryName: repo, prNumber },
@@ -106,11 +104,94 @@ Please explain:
             const message = isRevert ? reversedIntent : intentMessage;
             await postComment(token, owner, repo, prNumber, message);
 
+
+
+            //NO CLEAR OWNERSHIP OF CODE AND SERVICES
+            try {
+                const organization = await isOrganization(token, owner, repo, prNumber);
+                const ownerType = req.body.repository.owner.type;
+                const repoOrganization = ownerType === "Organization";
+                const changedFiles = await getChangedFiles(token, owner, repo, prNumber);
+                const commitCounts = await getNumberOfCommits(token, owner, repo, prNumber);
+                const allowedDevelopers = await allowed(token, owner, repo);
+                const commitMessages = await getCommitsMessages(token, owner, repo, prNumber);
+
+                let ownershipMessage = `Changed Files:
+                        ${changedFiles.join("\n")}
+
+                        Developer Commit Counts:
+                        ${JSON.stringify(commitCounts, null, 2)}
+
+                        Allowed Developers (can merge PR):
+                        ${Object.keys(allowedDevelopers).join(", ")}
+
+                        Recent Commit Messages:
+                        ${JSON.stringify(commitMessages, null, 2)}
+                        `;
+
+                let teams = [];
+                if (repoOrganization) {
+
+                    teams = await getTeams(token, owner);
+
+                    ownershipMessage += `
+                        Teams Present in Organization:
+                        ${JSON.stringify(teams, null, 2)}
+                        `;
+                }
+
+                if (organization || repoOrganization) {
+                    const response = await ownershipInsights(ownershipMessage);
+
+                    await postComment(
+                        token,
+                        owner,
+                        repo,
+                        prNumber,
+                        `🤖 **DecisionGrid Ownership Insights**:\n\n${response}`
+                    );
+
+                    if (repoOrganization) {
+                        await info.findOneAndUpdate(
+                            { installationId, repositoryName: repo, prNumber },
+                            {
+                                SuggestedTeam: extractTeamsFromInsights(response, teams) || " No specific team suggested",
+                                SuggestedDevelopers: "No specific developer suggested as it's an organization repo"
+                            },
+                            { upsert: true }
+                        );
+                    } else {
+                        await info.findOneAndUpdate(
+                            { installationId, repositoryName: repo, prNumber },
+                            {
+                                SuggestedTeam: "No specific team suggested,it's not an organization repo",
+                                SuggestedDevelopers: extractDevsFromInsights(response, Object.keys(allowedDevelopers)) || " No specific developer suggested",
+                                firstNotifiedAt: new Date()
+                            },
+                            { upsert: true }
+                        );
+                    }
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Error occurred while checking organization:",
+                    error.message
+                );
+            }
+
             return res.sendStatus(200);
         }
 
         // ISSUE COMMENT EVENT
         if (event === "issue_comment" && action === "created") {
+
+            if (!req.body.issue.pull_request) {
+                return res.sendStatus(200);
+            }
+
             if (req.body.comment?.user?.type === "Bot") {
                 return res.sendStatus(200);
             }
@@ -120,6 +201,13 @@ Please explain:
             const owner = req.body.repository?.owner?.login;
             const repo = req.body.repository?.name;
             const commentText = req.body.comment?.body;
+            const ownerType = req.body.repository.owner.type;
+            const repoOrganization = ownerType === "Organization";
+            const jwt = generateGitHubJWT(
+                process.env.GITHUB_APP_ID,
+                process.env.GITHUB_PRIVATE_KEY
+            );
+            const token = await getInstallationToken(jwt, installationId);
 
             if (!installationId || !prNumber || !owner || !repo || !commentText) {
                 return res.status(400).send("Missing required comment data");
@@ -130,16 +218,10 @@ Please explain:
 
             if (!lowerText.startsWith("/intent") &&
                 !lowerText.includes("/approve-risk") &&
-                !lowerText.includes("/reject-risk")) {
+                !lowerText.includes("/reject-risk") && !lowerText.startsWith("/accept") && !lowerText.startsWith("/decline")) {
                 return res.sendStatus(200);
             }
 
-            const jwt = generateGitHubJWT(
-                process.env.GITHUB_APP_ID,
-                process.env.GITHUB_PRIVATE_KEY
-            );
-
-            const token = await getInstallationToken(jwt, installationId);
 
             const record = await Info.findOne({
                 installationId,
@@ -193,6 +275,71 @@ Please explain:
                     repo,
                     prNumber,
                     "❌ PR blocked due to risk."
+                );
+                return res.sendStatus(200);
+            }
+
+
+            let suggestedAction = await info.findOne({
+                installationId,
+                repositoryName: repo,
+                prNumber
+            });
+
+            let suggestedActionToBeTaken = '';
+
+            if (repoOrganization) {
+                suggestedActionToBeTaken += suggestedAction.SuggestedTeam || " No team suggested";
+            } else {
+                suggestedActionToBeTaken += suggestedAction.SuggestedDevelopers[0] || "No specific developer suggested";
+            }
+
+            if (lowerText.startsWith("/accept")) {
+                await postComment(
+                    token,
+                    owner,
+                    repo,
+                    prNumber,
+                    `✅ Tagging the developer for PR review @${suggestedActionToBeTaken}`
+                );
+
+                await updateCheckRun(
+                    token,
+                    owner,
+                    repo,
+                    record.checkRunId,
+                    "success",
+                    "Tagging accept by the developer."
+                );
+
+                return res.sendStatus(200);
+            }
+
+            if (lowerText.startsWith("/decline")) {
+                await updateCheckRun(
+                    token,
+                    owner,
+                    repo,
+                    record.checkRunId,
+                    "failure",
+                    "Suggested ownership declined by the developer. No tagging will be done."
+                );
+
+                await postComment(
+                    token,
+                    owner,
+                    repo,
+                    prNumber,
+                    "Tag the Reviewer you want to review this PR @mention"
+                );
+
+                await updateCheckRun(
+                    token,
+                    owner,
+                    repo,
+                    record.checkRunId,
+                    "success",
+                    "Tagging is done by the developer by its own."
                 );
                 return res.sendStatus(200);
             }
@@ -308,33 +455,33 @@ Please explain:
 
                 let formattedPast = pastInsights.map((p, index) => {
                     return `
-Decision ${index + 1}:
-Problem: ${p.problem || ""}
-Shortcut: ${p.shortcut || ""}
-Impact: ${p.impact || ""}
-Revert Reason: ${p.revertReason || ""}
-Earlier Problem: ${p.earlierProblem || ""}
-New Plan: ${p.newPlan || ""}
-`;
+                           Decision ${index + 1}:
+                           Problem: ${p.problem || ""}
+                           Shortcut: ${p.shortcut || ""}
+                           Impact: ${p.impact || ""}
+                           Revert Reason: ${p.revertReason || ""}
+                           Earlier Problem: ${p.earlierProblem || ""}
+                           New Plan: ${p.newPlan || ""}
+                           `;
                 }).join("\n");
 
                 //summary of the pattern and insights by comparing with past decisions
                 const insights = await summarizeIntent(`
-Past Decisions:
-${formattedPast}
+                        Past Decisions:
+                        ${formattedPast}
 
-Current Decision:
-${commentText}
+                        Current Decision:
+                        ${commentText}
 
-Compare:
-- Is this repeating something?
-- Is it conflicting?
-- Any pattern?
-`);
+                        Compare:
+                        - Is this repeating something?
+                        - Is it conflicting?
+                        - Any pattern?
+                        `);
 
 
                 await postComment(token, owner, repo, prNumber, `🤖 DecisionGrid Summary and Insights:\n\n${insights}`);
-            
+
                 const insightsText = insights.toLowerCase();
                 const riskyKeywords = ["delete", "drop", "migration", "auth", "security"];
                 const isRisky =
@@ -359,14 +506,14 @@ Compare:
                         prNumber,
                         `⚠️ **DecisionGridOps Risk Warning**
 
-This pull request appears **HIGH RISK**.
+                            This pull request appears **HIGH RISK**.
 
-Think carefully before merging.
+                            Think carefully before merging.
 
-Reply with:
+                            Reply with:
 
-/approve-risk → Accept risk and allow merge  
-/reject-risk → Block this PR`
+                            /approve-risk → Accept risk and allow merge  
+                            /reject-risk → Block this PR`
                     );
 
 
@@ -413,6 +560,15 @@ Reply with:
             const prNumber = req.body.pull_request?.number;
             const owner = req.body.repository?.owner?.login;
             const repo = req.body.repository?.name;
+            const ownerType = req.body.repository.owner.type;
+            const repoOrganization = ownerType === "Organization";
+
+            const jwt = generateGitHubJWT(
+                process.env.GITHUB_APP_ID,
+                process.env.GITHUB_PRIVATE_KEY
+            );
+
+            const token = await getInstallationToken(jwt, installationId);
 
             const information = await Info.findOne({
                 installationId,
@@ -449,10 +605,45 @@ Reply with:
                     }
                 }
             )
+
+            if (repoOrganization || await isOrganization(token, owner, repo)) {
+                await Ownership.findOneAndUpdate(
+                    { installationId, repositoryName: repo, prNumber },
+                    {
+                        mergedBy: req.body.pull_request.merged_by.login || "",
+                    }, { upsert: true }
+                );
+            }
+        }
+
+        if (
+            event === "pull_request_review" &&
+            action === "submitted"
+        ) {
+
+            const installationId = req.body.installation?.id;
+            const prNumber = req.body.pull_request.number;
+            const repo = req.body.repository?.name;
+
+
+            await Ownership.findOneAndUpdate(
+                { installationId, repositoryName: repo, prNumber },
+                {
+                    $setOnInsert: {
+                        installationId,
+                        repositoryName: repo,
+                        prNumber
+                    },
+                    $addToSet: {
+                        reviewedBy: reviewer
+                    }
+                },
+                { upsert: true }
+            );
+
         }
 
         return res.sendStatus(200);
-
 
     } catch (error) {
         console.error(error.response?.data || error.message);
