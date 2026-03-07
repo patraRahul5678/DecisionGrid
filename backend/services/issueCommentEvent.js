@@ -2,7 +2,7 @@ const Info = require('../models/info');
 const postComment = require('../utils/postComment');
 const { generateGitHubJWT } = require('../utils/generateJWT');
 const { getInstallationToken } = require('../utils/getInstallationToken');
-const {updateCheckRun } = require('../utils/CheckRun');
+const { updateCheckRun } = require('../utils/CheckRun');
 const { summarizeIntent } = require('../services/aiService');
 const snapshot = require('../models/snapshots');
 const info = require('../models/info');
@@ -227,44 +227,89 @@ async function issueComment(req, res) {
     }
 
     // validation
+    // let isValid = false;
+
+    // const has1 = /(^|\n)\s*1\./.test(trimmedText);
+    // const has2 = /(^|\n)\s*2\./.test(trimmedText);
+    // const has3 = /(^|\n)\s*3\./.test(trimmedText);
+    // const hasNumbers = has1 && has2 && has3;
+
+    // if (record.isRevert === true) {
+
+    //     const hasRevertTerms =
+    //         lowerText.includes("revers") || lowerText.includes("why");
+
+    //     const hasProblemTerms =
+    //         lowerText.includes("problem") || lowerText.includes("cause");
+
+    //     const hasPlanTerms =
+    //         lowerText.includes("plan") || lowerText.includes("forward");
+
+    //     if (hasNumbers && hasRevertTerms && hasProblemTerms && hasPlanTerms) {
+    //         isValid = true;
+    //     }
+
+    // } else {
+
+    //     const hasProblemTerms =
+    //         lowerText.includes("problem") || lowerText.includes("why");
+
+    //     const hasShortcutTerms =
+    //         lowerText.includes("shortcut") || lowerText.includes("trade");
+
+    //     const hasImpactTerms =
+    //         lowerText.includes("improve") ||
+    //         lowerText.includes("next") ||
+    //         lowerText.includes("happen");
+
+    //     if (hasNumbers && hasProblemTerms && hasShortcutTerms && hasImpactTerms) {
+    //         isValid = true;
+    //     }
+    // }
+
+    // if (!isValid) {
+
+    //     let failureMessage = "";
+
+    //     if (record.isRevert === true) {
+    //         failureMessage = "Please answer all 3 reversal questions with proper numbering (1., 2., 3.)";
+    //     } else {
+    //         failureMessage = "Please answer all 3 intent questions with proper numbering (1., 2., 3.)";
+    //     }
+
+    //     await updateCheckRun(
+    //         token,
+    //         owner,
+    //         repo,
+    //         record.checkRunId,
+    //         "failure",
+    //         failureMessage
+    //     );
+
+    //     await postComment(
+    //         token,
+    //         owner,
+    //         repo,
+    //         prNumber,
+    //         `❌ ${failureMessage}`
+    //     );
+
+    //     return res.sendStatus(200);
+    // }
+
+
+
+    // validation
     let isValid = false;
 
     const has1 = /(^|\n)\s*1\./.test(trimmedText);
     const has2 = /(^|\n)\s*2\./.test(trimmedText);
     const has3 = /(^|\n)\s*3\./.test(trimmedText);
+
     const hasNumbers = has1 && has2 && has3;
 
-    if (record.isRevert === true) {
-
-        const hasRevertTerms =
-            lowerText.includes("revers") || lowerText.includes("why");
-
-        const hasProblemTerms =
-            lowerText.includes("problem") || lowerText.includes("cause");
-
-        const hasPlanTerms =
-            lowerText.includes("plan") || lowerText.includes("forward");
-
-        if (hasNumbers && hasRevertTerms && hasProblemTerms && hasPlanTerms) {
-            isValid = true;
-        }
-
-    } else {
-
-        const hasProblemTerms =
-            lowerText.includes("problem") || lowerText.includes("why");
-
-        const hasShortcutTerms =
-            lowerText.includes("shortcut") || lowerText.includes("trade");
-
-        const hasImpactTerms =
-            lowerText.includes("improve") ||
-            lowerText.includes("next") ||
-            lowerText.includes("happen");
-
-        if (hasNumbers && hasProblemTerms && hasShortcutTerms && hasImpactTerms) {
-            isValid = true;
-        }
+    if (hasNumbers) {
+        isValid = true;
     }
 
     if (!isValid) {
@@ -291,7 +336,29 @@ async function issueComment(req, res) {
             owner,
             repo,
             prNumber,
-            `❌ ${failureMessage}`
+            `❌ ${failureMessage}
+
+Example:
+
+/intent
+1. What problem does this change solve?
+2. Did you take any shortcut?
+3. What happens after this change?
+
+Example answer:
+
+/intent
+1. Added a new feature for login optimization.
+2. No shortcuts were taken.
+3. Next we will improve caching.
+
+Quick template:
+
+/intent
+1.
+2.
+3.
+`
         );
 
         return res.sendStatus(200);

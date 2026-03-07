@@ -127,13 +127,14 @@ router.post("/webhook", async (req, res) => {
                 : "No reviewer";
             const mergedText = mergedBy ? `@${mergedBy}` : "Unknown";
 
-            await postComment(
-                token,
-                owner,
-                repo,
-                prNumber,
-                `
-                        🤖 **DecisionGrid Ownership Summary**
+            if (repoOrganization || await isOrganization(token, owner, repo)) {
+                await postComment(
+                    token,
+                    owner,
+                    repo,
+                    prNumber,
+                    `
+                        DecisionGrid Ownership Summary
 
                         Reviewed By:
                         ${reviewedText}
@@ -141,7 +142,8 @@ router.post("/webhook", async (req, res) => {
                         Merged By:
                         ${mergedText}
                 `
-            );
+                );
+            }
 
             if (information?.checkRunId) {
                 await updateCheckRun(

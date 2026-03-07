@@ -52,18 +52,48 @@ async function prOpenedEvent(req, res) {
                     /intent
                     1. What is the problem and why fix it now?
                     2. Did you take any shortcut?
-                    3. What happens after this change, and what will you improve next?`;
+                    3. What happens after this change, and what will you improve next?
+                    
+                      
+                    
+                    Example answer:
+                       1. Added a new feature to improve login performance.
+                       2. No shortcuts were taken.
+                       3. After this change the login process becomes faster, next we will optimize caching.
+                    
+                       Quick template (copy and edit):
+                       
+                                /intent
+                                1.
+                                2.
+                                3.
+                    `;
 
     const reversedIntent = `🚀 DecisionGridOps Intent Required
 
-                    This PR looks like a reversal.
+                            This PR looks like a reversal.
 
-                    Please explain:
+                            Please explain using:
 
-                    /intent
-                    1. Why are we reversing this previous change?
-                    2. What problem did the earlier change cause?
-                    3. What is the new plan going forward?`;
+                            /intent
+                            1. Why are we reversing this previous change?
+                            2. What problem did the earlier change cause?
+                            3. What is the new plan going forward?
+
+                            Example:
+
+                            /intent
+                            1. Reverting the caching change because it caused inconsistent API responses.
+                            2. The earlier change introduced stale data issues in production.
+                            3. We will revert this fix now and reintroduce caching later with proper invalidation.
+
+                            Quick template (copy and edit):
+
+                            /intent
+                            1.
+                            2.
+                            3.
+                            `;
 
     await Info.findOneAndUpdate(
         { installationId, repositoryName: repo, prNumber },
