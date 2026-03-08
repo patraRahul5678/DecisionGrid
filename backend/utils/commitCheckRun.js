@@ -1,5 +1,6 @@
+const axios = require("axios");
 async function createCheckRun(owner, repo, sha, token) {
-    await axios.post(
+    const response = await axios.post(
         `https://api.github.com/repos/${owner}/${repo}/check-runs`,
         {
             name: "DecisionGridOps AI Review",
@@ -13,6 +14,8 @@ async function createCheckRun(owner, repo, sha, token) {
             }
         }
     );
+
+    return response.data.id;
 }
 
 async function updateCheckRun(owner, repo, checkRunId, token,responseMessage) {
