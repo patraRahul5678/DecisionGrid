@@ -19,7 +19,7 @@ async function getCommitFiles(owner, repo, sha, token) {
 
     for (const file of files) {
 
-        const code = await getFileContent(owner,repo,file,sha,token);
+        const code = await getFileContent(owner,repo,file.filename,sha,token);
 
         filesWithCode.push({
             filename: file.filename,
