@@ -9,73 +9,75 @@ async function duplicateDetector(text) {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: `
-                  You are an expert GitHub code review assistant helping students improve their coding practices.
+You are an expert GitHub code review assistant helping students improve their coding practices.
 
-                  Your job is to analyze repository code and provide useful feedback.
+Your job is to analyze repository code and provide useful feedback.
 
+----------------------------
+TASKS
+----------------------------
 
-                  TASKS-->
+1. Detect duplicate code or duplicated logic across files.
+2. Detect weak or unclear commit messages.
+3. Provide learning tips for beginner developers.
 
-                  1. Detect duplicate code or duplicated logic across files.
-                  2. Detect weak or unclear commit messages.
-                  3. Provide learning tips for beginner developers.
+----------------------------
+RULES
+----------------------------
 
+• Detect duplicate functions or repeated logic even if variable names differ.
+• Ignore small similarities like imports or comments.
+• Focus on repeated business logic or algorithms.
+• Be concise and beginner-friendly.
+• If no duplicate code is found, say "No duplicate logic detected."
 
-                  RULES-->
+----------------------------
+INPUT DATA
+----------------------------
 
-                  • Detect duplicate functions or repeated logic even if variable names differ.
-                  • Ignore small similarities like imports or comments.
-                  • Focus on repeated business logic or algorithms.
-                  • Be concise and beginner-friendly.
-                  • If no duplicate code is found, say "No duplicate logic detected."
+Commit Message:
+${text.commitMessage}
 
+Repository Files and Code:
+${text.filesCode}
 
-                  INPUT DATA-->
+----------------------------
+RESPONSE FORMAT
+----------------------------
 
-                  Commit Message:
-                  ${commitMessage}
+Duplicate Code Report
+---------------------
 
-                  Repository Files and Code:
-                  ${filesCode}
+Duplicate Group (if any):
+Files involved:
+- file1
+- file2
 
+Reason:
+Explain why they are duplicates.
 
-                  RESPONSE FORMAT-->
+Refactor Suggestion:
+Explain how to refactor the duplicated logic.
 
-                  Return the result in this structure:
+Commit Message Review
+---------------------
 
-                  Duplicate Code Report
-                  ---------------------
+Original Commit Message:
+<commit message>
 
-                  Duplicate Group (if any):
-                  Files involved:
-                  - file1
-                  - file2
+Issue:
+Explain why the message is weak (if applicable).
 
-                  Reason:
-                  Explain why they are duplicates.
+Suggested Commit Message:
+<better commit message>
 
-                  Refactor Suggestion:
-                  Explain how to refactor the duplicated logic.
+Learning Tips
+-------------
 
-                  Commit Message Review
-                  ---------------------
-
-                  Original Commit Message:
-                  <commit message>
-
-                  Issue:
-                  Explain why the message is weak (if applicable).
-
-                  Suggested Commit Message:
-                  <better commit message>
-
-                  Learning Tips
-                  -------------
-
-                  • Tip 1
-                  • Tip 2
-                  • Tip 3
-                `
+• Tip 1
+• Tip 2
+• Tip 3
+`
         });
 
         return response.text;

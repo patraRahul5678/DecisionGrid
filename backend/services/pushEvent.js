@@ -37,16 +37,27 @@ async function pushEvent(req, res) {
 
             if (!file.code) continue;
 
+            //Skip unnecessary files
+            if (
+                file.filename.includes("node_modules") ||
+                file.filename.includes("dist") ||
+                file.filename.endsWith(".json") ||
+                file.filename.endsWith(".lock")
+            ) continue;
+
+            // Limit file size to prevent huge AI prompts
+            if (file.code.length > 6000) continue;
+
+
             filesCode += `
                File: ${file.filename}
                     ${file.code}
                 `;
         }
 
-        let allInformation = `Files code=${filesCode} and Commit Message: ${commitMessage}`;
-
         const responseMessage = await duplicateDetector({
-            allInformation
+            filesCode,
+            commitMessage
         });
 
         await postCommitComment(owner, repo, sha, `🕵️ DecisionGridOps FeedBack:\n\n${responseMessage}`, token);
