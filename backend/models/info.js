@@ -22,6 +22,10 @@ const infoSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
+        //for student features
+        commitSha:{
+            type: String,
+        },
         isRevert: {
             type: Boolean,
             required: true,

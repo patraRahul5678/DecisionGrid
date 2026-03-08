@@ -5,6 +5,7 @@ const { duplicateDetector } = require("../services/duplicateDetector");
 const { postCommitComment } = require("../utils/postCommitMessages");
 const { createCheckRun, updateCheckRun } = require("../utils/commitCheckRun");
 const { issueCommentEvent } = require("../utils/isssueCommentCommitEvent");
+const info = require("../models/info");
 
 async function pushEvent(req, res) {
 
@@ -31,6 +32,16 @@ async function pushEvent(req, res) {
         const token = await getInstallationToken(jwt, installationId);
 
         const checkRunId = await createCheckRun(owner, repo, sha, token);
+
+        await info.findOneAndUpdate(
+            { repositoryName: repo, commitSha: sha },
+            {
+                repositoryName: repo,
+                commitSha: sha,
+                checkRunId
+            },
+            { upsert: true }
+        );
 
         const files = await getCommitFiles(owner, repo, sha, token);
         let filesCode = "";
@@ -64,7 +75,7 @@ async function pushEvent(req, res) {
 
         await postCommitComment(owner, repo, sha, `🕵️ DecisionGridOps FeedBack:\n\n${responseMessage} Please comment with "/reviewed" to mark as reviewed.`, token);
 
-        return await issueCommentEvent(req, res, checkRunId);
+        res.status(200);
 
 
     } catch (error) {

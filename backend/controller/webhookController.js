@@ -18,6 +18,7 @@ const { getTeams } = require('../utils/getTeamNames');
 const { ownershipInsights } = require('../services/aiService');
 const { extractTeamsFromInsights, extractDevsFromInsights } = require('../utils/extract');
 const pushEvent = require('../services/pushEvent');
+const { issueCommentEvent } = require('../utils/isssueCommentCommitEvent');
 
 
 
@@ -45,6 +46,10 @@ router.post("/webhook", async (req, res) => {
         // ISSUE COMMENT EVENT
         if (event === "issue_comment" && action === "created") {
             return await issueComment(req, res);
+        }
+
+        if (event === "commit_comment" && action === "created") {
+            return await issueCommentEvent(req, res);
         }
 
 
@@ -189,8 +194,8 @@ router.post("/webhook", async (req, res) => {
         }
 
         //PUSH EVENT
-        if(event=="push"){
-            return await pushEvent(req,res);
+        if (event == "push") {
+            return await pushEvent(req, res);
         }
 
         return res.sendStatus(200);

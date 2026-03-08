@@ -1,11 +1,22 @@
+const info = require("../models/info");
 const { updateCheckRun } = require("./commitCheckRun");
+const { generateGitHubJWT } = require("./generateJWT");
+const { getInstallationToken } = require("./getInstallationToken");
 
-async function issueCommentEvent(req, res,checkRunId) {
+async function issueCommentEvent(req, res, checkRunId) {
 
     const comment = req.body.comment.body;
     const owner = req.body.repository.owner.login;
     const repo = req.body.repository.name;
     const installationId = req.body.installation.id;
+    const sha = req.body.comment.commit_id;
+
+    const Info = await info.findOne({
+        repositoryName: repo,
+        commitSha: sha
+    });
+
+    const checkRunId = Info?.checkRunId;
 
     if (!comment) return res.sendStatus(200);
 
@@ -23,11 +34,13 @@ async function issueCommentEvent(req, res,checkRunId) {
             repo,
             checkRunId,
             token,
-            "✔ DecisionGridOps Review Completed"
+            "🟡 Waiting for developer confirmation. Comment `/reviewed` after fixing issues."
         );
+
+
     }
 
-    res.sendStatus(200);
+    return res.sendStatus(200);
 }
 
 module.exports = {
