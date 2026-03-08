@@ -11,6 +11,10 @@ async function issueCommentEvent(req, res) {
     const installationId = req.body.installation.id;
     const sha = req.body.comment.commit_id;
 
+    if (!comment || !comment.toLowerCase().includes("/reviewed")) {
+        return res.sendStatus(200);
+    }
+    
     const Info = await info.findOne({
         repositoryName: repo,
         commitSha: sha
@@ -18,7 +22,11 @@ async function issueCommentEvent(req, res) {
 
     const checkRunId = Info?.checkRunId;
 
-    if (!comment) return res.sendStatus(200);
+    if (!checkRunId) {
+        console.log("No checkRunId found for commit:", sha);
+        return res.sendStatus(200);
+    }
+
 
     if (comment.toLowerCase().includes("/reviewed")) {
 
@@ -34,9 +42,8 @@ async function issueCommentEvent(req, res) {
             repo,
             checkRunId,
             token,
-            "🟡 Waiting for developer confirmation. Comment `/reviewed` after fixing issues."
+            "This commit has been marked as reviewed by the user."
         );
-
 
     }
 

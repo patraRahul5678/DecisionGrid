@@ -23,7 +23,7 @@ async function updateCheckRun(owner, repo, checkRunId, token,responseMessage) {
         `https://api.github.com/repos/${owner}/${repo}/check-runs/${checkRunId}`,
         {
             status: "completed",
-            conclusion: "neutral",
+            conclusion: "success",
             output: {
                 title: "DecisionGridOps Feedback",
                 summary: "AI code analysis completed",
