@@ -3,6 +3,7 @@ const { getCommitFiles } = require("../utils/getCommitFiles");
 const { getInstallationToken } = require("../utils/getInstallationToken");
 const { duplicateDetector } = require("../services/duplicateDetector");
 const { postCommitComment } = require("../utils/postCommitMessages");
+const { createCheckRun, updateCheckRun } = require("../utils/commitCheckRun");
 
 async function pushEvent(req, res) {
 
@@ -28,9 +29,9 @@ async function pushEvent(req, res) {
 
         const token = await getInstallationToken(jwt, installationId);
 
-        const files = await getCommitFiles(owner, repo, sha, token);
+        const checkRunId = await createCheckRun(owner, repo, sha, token);
 
-        // Convert files to AI-friendly text
+        const files = await getCommitFiles(owner, repo, sha, token);
         let filesCode = "";
 
         for (const file of files) {
@@ -61,6 +62,8 @@ async function pushEvent(req, res) {
         });
 
         await postCommitComment(owner, repo, sha, `🕵️ DecisionGridOps FeedBack:\n\n${responseMessage}`, token);
+
+        await updateCheckRun(owner,repo,checkRunId,token,"✔ DecisionGridOps Review Completed");
 
         res.sendStatus(200);
 
