@@ -3,7 +3,7 @@ const { updateCheckRun } = require("./commitCheckRun");
 const { generateGitHubJWT } = require("./generateJWT");
 const { getInstallationToken } = require("./getInstallationToken");
 
-async function issueCommentEvent(req, res, checkRunId) {
+async function issueCommentEvent(req, res) {
 
     const comment = req.body.comment.body;
     const owner = req.body.repository.owner.login;
