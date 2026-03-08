@@ -23,7 +23,7 @@ async function pushEvent(req, res) {
         const owner = req.body.repository.owner.login;
         const repo = req.body.repository.name;
         const installationId = req.body.installation?.id;
-        
+
         if (!installationId) {
             console.log("No installation ID found");
             return res.sendStatus(200);
@@ -89,19 +89,40 @@ async function pushEvent(req, res) {
             owner,
             repo,
             sha,
-            `🕵️ **DecisionGridOps Feedback**
+            `## 🕵️ DecisionGridOps Feedback
 
-            ${responseMessage}
+                    ---
 
-                  ---
+                    ### 🔍 Duplicate Code Report
 
-           💡 **Next Step**
+                    ${duplicateSection}
 
-                After fixing the issues, comment:
+                    ---
 
-                \`/reviewed\`
+                    ### 📝 Commit Message Review
 
-               to mark this commit as reviewed.`,
+                    **Original Commit Message**
+
+                    \`${commitMessage}\`
+
+                    ${commitReview}
+
+                    ---
+
+                    ### 📚 Learning Tips
+
+                    ${learningTips}
+
+                    ---
+
+                    ### 💡 Next Step
+
+                    After fixing the issues, comment:
+
+                    \`/reviewed\`
+
+                    to mark this commit as reviewed.
+                    `,
             token
         );
 
