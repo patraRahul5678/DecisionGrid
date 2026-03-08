@@ -17,6 +17,7 @@ const { allowed } = require('../utils/permisssions');
 const { getTeams } = require('../utils/getTeamNames');
 const { ownershipInsights } = require('../services/aiService');
 const { extractTeamsFromInsights, extractDevsFromInsights } = require('../utils/extract');
+const pushEvent = require('../services/pushEvent');
 
 
 
@@ -45,6 +46,7 @@ router.post("/webhook", async (req, res) => {
         if (event === "issue_comment" && action === "created") {
             return await issueComment(req, res);
         }
+
 
         if (
             event === "pull_request" &&
@@ -134,7 +136,7 @@ router.post("/webhook", async (req, res) => {
                     repo,
                     prNumber,
                     `
-                        DecisionGrid Ownership Summary
+                        🚀DecisionGridOps Ownership Summary
 
                         Reviewed By:
                         ${reviewedText}
@@ -184,6 +186,11 @@ router.post("/webhook", async (req, res) => {
                     { upsert: true }
                 );
             }
+        }
+
+        //PUSH EVENT
+        if(event=="push"){
+            return await pushEvent(req,res);
         }
 
         return res.sendStatus(200);

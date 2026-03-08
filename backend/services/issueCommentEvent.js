@@ -226,7 +226,7 @@ async function issueComment(req, res) {
         return res.sendStatus(200);
     }
 
-    // validation
+    // more accurate validation(used in future)
     // let isValid = false;
 
     // const has1 = /(^|\n)\s*1\./.test(trimmedText);
@@ -429,7 +429,7 @@ Quick template:
                         `);
 
 
-        await postComment(token, owner, repo, prNumber, `🤖 DecisionGrid Summary and Insights:\n\n${insights}`);
+        await postComment(token, owner, repo, prNumber, `🤖 DecisionGridOps Summary and Insights:\n\n${insights}`);
 
         const insightsText = insights.toLowerCase();
         const riskyKeywords = ["delete", "drop", "migration", "auth", "security"];

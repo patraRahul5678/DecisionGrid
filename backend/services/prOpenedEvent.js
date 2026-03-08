@@ -156,7 +156,7 @@ async function prOpenedEvent(req, res) {
                 owner,
                 repo,
                 prNumber,
-                `🤖 **DecisionGrid Ownership Insights**:\n\n${response}`
+                `🤖 **DecisionGridOps Ownership Insights**:\n\n${response}`
             );
 
             if (repoOrganization) {
