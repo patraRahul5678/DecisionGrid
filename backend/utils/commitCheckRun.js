@@ -3,7 +3,7 @@ async function createCheckRun(owner, repo, sha, token) {
     const response = await axios.post(
         `https://api.github.com/repos/${owner}/${repo}/check-runs`,
         {
-            name: "DecisionGridOps AI Review",
+            name: "DecisionGridOps Review",
             head_sha: sha,
             status: "in_progress"
         },

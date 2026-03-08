@@ -4,6 +4,7 @@ const { getInstallationToken } = require("../utils/getInstallationToken");
 const { duplicateDetector } = require("../services/duplicateDetector");
 const { postCommitComment } = require("../utils/postCommitMessages");
 const { createCheckRun, updateCheckRun } = require("../utils/commitCheckRun");
+const { issueCommentEvent } = require("../utils/isssueCommentCommitEvent");
 
 async function pushEvent(req, res) {
 
@@ -61,11 +62,10 @@ async function pushEvent(req, res) {
             commitMessage
         });
 
-        await postCommitComment(owner, repo, sha, `🕵️ DecisionGridOps FeedBack:\n\n${responseMessage}`, token);
+        await postCommitComment(owner, repo, sha, `🕵️ DecisionGridOps FeedBack:\n\n${responseMessage} Please comment with "/reviewed" to mark as reviewed.`, token);
 
-        await updateCheckRun(owner,repo,checkRunId,token,"✔ DecisionGridOps Review Completed");
+        return await issueCommentEvent(req, res, checkRunId);
 
-        res.sendStatus(200);
 
     } catch (error) {
 
