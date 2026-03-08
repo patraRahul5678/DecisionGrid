@@ -14,7 +14,7 @@ async function issueCommentEvent(req, res) {
     if (!comment || !comment.toLowerCase().includes("/reviewed")) {
         return res.sendStatus(200);
     }
-    
+
     const Info = await info.findOne({
         repositoryName: repo,
         commitSha: sha

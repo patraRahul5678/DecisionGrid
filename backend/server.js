@@ -7,8 +7,6 @@ const port=process.env.PORT || 3000;
 require("./utils/scheduler");
 
 app.use(express.json());
-
-
 app.use("/", webControllers);
 
 app.listen(port, async () => {

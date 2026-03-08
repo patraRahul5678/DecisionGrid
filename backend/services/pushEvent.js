@@ -34,11 +34,18 @@ async function pushEvent(req, res) {
         const checkRunId = await createCheckRun(owner, repo, sha, token);
 
         await info.findOneAndUpdate(
-            { repositoryName: repo, commitSha: sha },
             {
+                installationId,
                 repositoryName: repo,
                 commitSha: sha,
-                checkRunId
+                repositoryOwner: owner
+            },
+            {
+                installationId,
+                repositoryName: repo,
+                commitSha: sha,
+                checkRunId,
+                repositoryOwner: owner
             },
             { upsert: true }
         );
@@ -73,7 +80,25 @@ async function pushEvent(req, res) {
             commitMessage
         });
 
-        await postCommitComment(owner, repo, sha, `🕵️ DecisionGridOps FeedBack:\n\n${responseMessage} Please comment with "/reviewed" to mark as reviewed.`, token);
+        await postCommitComment(
+            owner,
+            repo,
+            sha,
+            `🕵️ **DecisionGridOps Feedback**
+
+            ${responseMessage}
+
+                  ---
+
+           💡 **Next Step**
+
+                After fixing the issues, comment:
+
+                \`/reviewed\`
+
+               to mark this commit as reviewed.`,
+            token
+        );
 
         res.status(200);
 
