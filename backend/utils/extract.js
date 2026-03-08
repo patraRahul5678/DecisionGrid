@@ -2,11 +2,11 @@ function extractTeamsFromInsights(text, teams) {
 
   for (const team of teams) {
     if (text.toLowerCase().includes(team.toLowerCase())) {
-      return team;
+      return [team];
     }
   }
 
-  return null;
+  return [];
 }
 
 function extractDevsFromInsights(text, devs) {
@@ -17,7 +17,7 @@ function extractDevsFromInsights(text, devs) {
     }
   }
 
-  return null;  
+  return [];  
 }
 
 module.exports = { extractTeamsFromInsights, extractDevsFromInsights };

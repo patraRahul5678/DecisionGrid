@@ -42,4 +42,5 @@ ${text}
     }
 }
 
+
 module.exports = { summarizeIntent };

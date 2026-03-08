@@ -22,7 +22,12 @@ async function pushEvent(req, res) {
 
         const owner = req.body.repository.owner.login;
         const repo = req.body.repository.name;
-        const installationId = req.body.installation.id;
+        const installationId = req.body.installation?.id;
+        
+        if (!installationId) {
+            console.log("No installation ID found");
+            return res.sendStatus(200);
+        }
 
         const jwt = generateGitHubJWT(
             process.env.GITHUB_APP_ID,
@@ -100,7 +105,7 @@ async function pushEvent(req, res) {
             token
         );
 
-        res.status(200);
+        res.sendStatus(200);
 
 
     } catch (error) {

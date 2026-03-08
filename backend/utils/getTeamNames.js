@@ -1,3 +1,5 @@
+const axios = require("axios");
+
 async function getTeams(token, org) {
 
   const res = await axios.get(
